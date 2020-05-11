@@ -23,12 +23,12 @@ async function getUserData() {
  * each card to the main gallery element
  */
 function generateMainHTML() {
-	users.forEach(user => {
+	users.forEach((user, index) => {
     // create a card div to put the user data into
 		const div = document.createElement('div');
 		div.classList.add('card');
-    // give the card div an id matching the user
-    div.id = user.login.username;
+    // give the card div a custom data attribute matching its index in the users array
+    div.setAttribute('data-index', index)
     // build the user HTML
 		const userHTML = `
     
@@ -36,7 +36,7 @@ function generateMainHTML() {
           <img class="card-img" src="${user.picture.medium}" alt="profile picture">
       </div>
       <div class="card-info-container">
-          <h3 id="name" class="card-name cap">${user.name.first} ${user.name.last}</h3>
+          <h3 class="card-name cap">${user.name.first} ${user.name.last}</h3>
           <p class="card-text">${user.email}</p>
           <p class="card-text cap">${user.location.city}, ${user.location.state}</p>
       </div>
@@ -52,6 +52,7 @@ function generateMainHTML() {
 function generateEmptyModal() {
   const modalDiv = document.createElement('div');
   modalDiv.classList.add('modal-container');
+  modalDiv.setAttribute('data-user-index', '');
   const modalHTML = `
 
     <div class="modal">
@@ -81,7 +82,10 @@ function generateEmptyModal() {
   document.body.insertBefore(modalDiv, document.querySelector('script'));  
 }
 
-function showModalWithUserData(user) {
+function populateModalWithUserData(user, index) {
+  const modal = document.querySelector('.modal-container');
+  modal.setAttribute('data-user-index', index);
+
   // get a reference to each modal element that needs to be populated
   const profile = document.getElementById('profile');
   const name = document.getElementById('name');
@@ -105,42 +109,49 @@ function showModalWithUserData(user) {
     ${user.location.postcode}
     `;
   dob.innerText = `Birthday: ${user.dob.date}`; // need to format the birthday
-
-  // show the modal
-  document.querySelector('.modal-container').style.display = '';
 }
 
-
-
+// call function to get user data from randomUserAPI
+// set the global users variable to the array of users
+// and then call function to show users on the page
 getUserData()
   .then(data => (users = data.results))
   .then(generateMainHTML)
   .catch(error => console.error(error));
 
+/** call function to generate and hide the user details modal */ 
 generateEmptyModal();
 
 
-
-// add event listener to page to handle all events for exisitng or future elements
+/** Listen to all clicks on the document */ 
 document.addEventListener('click', (event) => {
-  
+  const modal = document.querySelector('.modal-container');
+
   // open the modal
   if (event.target.closest('.card')) {
     const card = event.target.closest('.card');
-    const thisUser = users.find(user => user.login.username === card.id)
-    showModalWithUserData(thisUser);
+    const userIndex = card.dataset.index;
+    populateModalWithUserData(users[userIndex], userIndex);
+    modal.style.display = '';
 
     // close the modal
   } else if (event.target.closest('#modal-close-btn')) {
-    document.querySelector('.modal-container').style.display = 'none';
-    
+    modal.style.display = 'none';
+
     // show prev user
   } else if (event.target.closest('#modal-prev')) {
-    console.log('previous button clicked')
+    const prevIndex = modal.dataset.userIndex - 1;
+    if (prevIndex > -1) {
+      populateModalWithUserData(users[prevIndex], prevIndex);
+    }
 
     // show next user
   } else if (event.target.closest('#modal-next')) {
-    console.log('next button clicked');
+    console.log('next');
+    const nextIndex = +modal.dataset.userIndex + 1;
+    if (nextIndex < users.length) {
+      populateModalWithUserData(users[nextIndex], nextIndex);
+    }
 
     // do nothing, this is here for testing
   } else {
