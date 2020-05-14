@@ -22,7 +22,7 @@ async function getUserData() {
 
 /* === USER CARDS === */
 /**
- * generates a card div element for each user and appends
+ * generates a card div element for each employee (user) and appends
  * each card to the main gallery element
  */
 function generateMainHTML(users) {
@@ -32,7 +32,7 @@ function generateMainHTML(users) {
 		div.classList.add('card');
 		// give the card div a custom data attribute matching its index in the users array
 		div.setAttribute('data-index', index);
-		// build the user HTML
+		// build the HTML
 		const userHTML = `
     
       <div class="card-img-container">
@@ -46,51 +46,60 @@ function generateMainHTML(users) {
   
     `;
 
-		// add the user HTML to the card div and append it to the gallery div
 		div.innerHTML = userHTML;
 		document.getElementById('gallery').appendChild(div);
 	});
 }
 
 /* === MODAL === */
+/**
+ * generates the html for the employee contact and address details
+ */
 function generateEmptyModal() {
-	const modalDiv = document.createElement('div');
-	modalDiv.classList.add('modal-container');
-	modalDiv.setAttribute('data-user-index', '');
+	const modalSection = document.createElement('section');
+	modalSection.classList.add('modal-container');
+	modalSection.setAttribute('data-user-index', '');
 	const modalHTML = `
 
     <div class="modal">
-        <button type="button" id="modal-close-btn" class="modal-close-btn"><strong>X</strong></button>
-        <div class="modal-info-container">
-            <img id="profile" class="modal-img" src="" alt="profile picture">
-            <h3 id="name" class="modal-name cap"></h3>
-            <p id="email" class="modal-text"></p>
-            <p id="location" class="modal-text cap"></p>
-            <hr>
+        <button type="button" id="modal-close-btn" class="modal-close-btn">close</button>
+        <address class="modal-info-container">
+          <img id="profile" class="modal-img" src="" alt="profile picture">
+          <h3 id="name" class="modal-name cap"></h3>
+          <p id="email" class="modal-text"></p>
+          <p id="location" class="modal-text cap"></p>
+          <div class="modal__address-details">
             <p id="cell" class="modal-text"></p>
             <p id="address" class="modal-text"></p>
             <p id="dob" class="modal-text"></p>
-        </div>
+          </div>
+        </address>
     </div>
 
     <div class="modal-btn-container">
-        <button type="button" id="modal-prev" class="modal-prev btn">Prev</button>
-        <button type="button" id="modal-next" class="modal-next btn">Next</button>
+        <button type="button" id="modal-prev" class="btn" >Prev</button>
+        <button type="button" id="modal-next" class="btn">Next</button>
     </div>
   
   `;
-	// add the hteml to the new div
-	modalDiv.innerHTML = modalHTML;
-	// hide the new div
-	modalDiv.style.display = 'none';
-	document.body.insertBefore(modalDiv, document.querySelector('script'));
+
+	modalSection.innerHTML = modalHTML;
+	modalSection.style.display = 'none';
+	document.body.insertBefore(modalSection, document.querySelector('script'));
 }
 
+/**
+ * Update the modal HTML with a user's data
+ * @param {object} user   User object from the users array
+ * @param {number} index  index of the user object in the users array
+ */
 function populateModalWithUserData(user, index) {
-	const modal = document.querySelector('.modal-container');
+  const modal = document.querySelector('.modal-container');
+  
+  // Update the custom data attribute with the user's index
 	modal.setAttribute('data-user-index', index);
 
-	// get a reference to each modal element that needs to be populated
+	// get a reference to each HTML element that needs to be populated
 	const profile = document.getElementById('profile');
 	const name = document.getElementById('name');
 	const email = document.getElementById('email');
@@ -99,27 +108,24 @@ function populateModalWithUserData(user, index) {
 	const address = document.getElementById('address');
 	const dob = document.getElementById('dob');
 
-	// populate the modal with the user data
+	// populate the HTML elements with the user data
 	profile.src = user.picture.large;
-	name.innerText = `${user.name.first} ${user.name.last}`;
-	email.innerText = user.email;
-	location.innerText = user.location.country;
-	cell.innerText = user.cell;
-	address.innerText = `
-    ${user.location.street.number} ${user.location.street.name} 
+	name.textContent = `${user.name.first} ${user.name.last}`;
+	email.textContent = user.email;
+	location.textContent = user.location.country;
+	cell.textContent = user.cell;
+  address.innerText = `${user.location.street.number} ${user.location.street.name}
     ${user.location.city}, ${user.location.state}, ${user.nat}
-    ${user.location.postcode}
-    `;
+    ${user.location.postcode}`;
 
-	// format the birthday
+	// format the birthday to a local data format
 	const birthday = new Date(user.dob.date);
 	dob.innerText = `Birthday: ${birthday.toLocaleDateString()}`;
 }
 
 /* === SEARCH === */
-// create a search form and add to DOM
+/** * Generate a search form and add it to the header */
 function generateSearchForm() {
-	// create a form with a search input and search button
 	const form = document.createElement('form');
 	form.id = 'search-employees';
 
@@ -128,53 +134,72 @@ function generateSearchForm() {
 	input.setAttribute('type', 'search');
 	input.setAttribute('id', 'search-input');
 	input.placeholder = 'Search employees by name';
-  form.appendChild(input);
-  
+	form.appendChild(input);
+
 	// submit button
 	const button = document.createElement('button');
 	button.setAttribute('type', 'search');
 	button.textContent = 'search';
-  form.appendChild(button);
+	form.appendChild(button);
 
-  // <p> element for displaying when no results found
-  const p = document.createElement('p');
-  form.appendChild(p);
-  
-	// append form to page-header div
 	document.querySelector('.search-container').appendChild(form);
 }
 
-// filter users based on search string
-function searchUsers(searchStr) {
-  const cards = document.querySelectorAll('.card');
-  const searchFeedback = document.querySelector('#search-employees p');
-  let feedback;
-  let fullName;
-
-  const results = users.filter((user, index) => {
-    fullName = `${user.name.first} ${user.name.last}`;
-    fullName = fullName.toLowerCase();
-    // add user to results if search string is within full name
-    // note that an empty search returns true
-    if (fullName.includes(searchStr)) {
-      // show card
-      cards[index].style.display = '';
-      // add user to list
-      return user;
-    } else {
-      // hide card
-      cards[index].style.display = 'none';
-    }
-  })
-
-  if (results.length > 0) {
-    feedback = `${results.length} results found`;
-  } else {
-    feedback = 'Sorry, there was no one found with that name.'
-  }
-  searchFeedback.textContent = feedback;
-
+/** element for displaying when no results found */
+function generateElementForShowingFeedback() {
+	const p = document.createElement('p');
+	p.id = 'feedback';
+	p.style.display = 'none';
+	document.querySelector('header').appendChild(p);
 }
+
+/**
+ * Uses search string app user typed in and hides employee cards that 
+ * did not match. An empty search string will display all the employees.
+ * @param {string} searchStr user input to search for
+ */
+function searchUsers(searchStr) {
+	const cards = document.querySelectorAll('.card');
+	let fullName;
+
+	const results = users.filter((user, index) => {
+		fullName = `${user.name.first} ${user.name.last}`;
+		fullName = fullName.toLowerCase();
+		if (fullName.includes(searchStr)) {
+			// show card
+			cards[index].style.display = '';
+			// add user to list
+			return user;
+		} else {
+			// hide card
+			cards[index].style.display = 'none';
+		}
+	});
+  // inform user of how many employees were found, if any
+  if (searchStr === '') {
+    updateFeedback('', false);
+  } else if (results.length > 0) {
+    updateFeedback(`${results.length} results found`, true);
+	} else {
+    updateFeedback('Sorry, there was no one found with that name.', true)
+	}
+}
+/**
+ * Updates the page with a feedback message. Show or hide message.
+ * @param {string} message  Test to put in message
+ * @param {Boolean} show    true = show; false = hide
+ */
+function updateFeedback(message, show) {
+  const searchFeedback = document.getElementById('feedback');
+  const display = show ? '' : 'none';
+  searchFeedback.textContent = message;
+  searchFeedback.style.display = display;
+}
+
+/** call functions to generate additional page elements */
+generateSearchForm();
+generateElementForShowingFeedback()
+generateEmptyModal();
 
 // call function to get user data from randomUserAPI
 // set the global users variable to the array of users
@@ -182,16 +207,15 @@ function searchUsers(searchStr) {
 getUserData()
 	.then(data => (users = data.results))
 	.then(() => generateMainHTML(users))
-	.catch(error => console.error(error));
-
-/** call function to generate and hide the user details modal */
-generateSearchForm();
-generateEmptyModal();
+	.catch(error => {
+    console.error(error);
+    updateFeedback('Something went wrong with getting the employee directory', true);
+  });
 
 /** Listen to all clicks on the document */
 document.addEventListener('click', event => {
-  const modal = document.querySelector('.modal-container');
-  const cards = document.querySelectorAll('.card');
+	const modal = document.querySelector('.modal-container');
+	const cards = document.querySelectorAll('.card');
 
 	// open the modal
 	if (event.target.closest('.card')) {
@@ -206,36 +230,29 @@ document.addEventListener('click', event => {
 
 		// show prev user
 	} else if (event.target.closest('#modal-prev')) {
-    let prevIndex = modal.dataset.userIndex - 1;
-    while (prevIndex > -1 && cards[prevIndex].style.display === 'none') {
-      prevIndex--
-    }
+		let prevIndex = modal.dataset.userIndex - 1;
+		while (prevIndex > -1 && cards[prevIndex].style.display === 'none') {
+			prevIndex--;
+		}
 		if (prevIndex > -1) {
 			populateModalWithUserData(users[prevIndex], prevIndex);
 		}
 
 		// show next user
 	} else if (event.target.closest('#modal-next')) {
-    let nextIndex = +modal.dataset.userIndex + 1;
-    while (nextIndex < users.length && cards[nextIndex].style.display === 'none') {
-      nextIndex++
-    }
+		let nextIndex = +modal.dataset.userIndex + 1;
+		while (nextIndex < users.length && cards[nextIndex].style.display === 'none') {
+			nextIndex++;
+		}
 		if (nextIndex < users.length) {
 			populateModalWithUserData(users[nextIndex], nextIndex);
-    }
-  }
+		}
+	}
 });
-
-function checkIfDisplayed(index) {
-  
-  
-  return index;
-}
-
 
 /** Listen to search form submit */
 document.getElementById('search-employees').addEventListener('submit', event => {
-  event.preventDefault();
-  const searchStr = document.getElementById('search-input').value.toLowerCase();
-  searchUsers(searchStr);
-})
+	event.preventDefault();
+	const searchStr = document.getElementById('search-input').value.toLowerCase();
+	searchUsers(searchStr);
+});
